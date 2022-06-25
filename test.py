@@ -37,8 +37,8 @@ class smith_waterman:
     align()
         Performs the Smith-Waterman alignment populating self._mat.
     solve(min_score = 0.0, n_sol = None)
-        Performs the traceback procedure for the solution with the top
-        n_sol score with score >= min_score.
+        Performs the traceback procedure for the top n_sol solutions
+        with score >= min_score.
     solutions_to_json()
         Returns all the computed solutions in a json format.
     solutions_to_tsv()
@@ -175,7 +175,7 @@ class smith_waterman:
         min_score = 0.0 : double
             Minimum score for a solution to be included.
         n_sol = None : int
-            Maximum number of top solution to be returned.
+            Maximum number of top solution to be returned
         Return
         ------
         res : list
@@ -243,14 +243,12 @@ class smith_waterman:
                         n_gap = end_point[t][1] - local_end_point[1]
                         local_res["alignment_seq2"] = "".join(["-" for k in range(n_gap)]) + local_res["alignment_seq2"]
                         local_res["n_gaps"] += n_gap
-                        print(n_gap)
                     # If score is moving left (gap insertion)
                     elif local_end_point[0] != end_point[t][0] and local_end_point[1] == end_point[t][1]:
                         local_res["alignment_seq2"] = self._seq_col[end_point[t][0] - 1] + local_res["alignment_seq2"]
-                        n_gap = end_point[t][0] - local_end_point[0]
+                        n_gap = end_point[t][0] - local_end_point[1]
                         local_res["alignment_seq1"] = "".join(["-" for k in range(n_gap)]) + local_res["alignment_seq1"]
                         local_res["n_gaps"] += n_gap
-                        print(n_gap)
                     local_res["alignment_length"] += 1
 
                 end_point[t] = self._mat[end_point[t][0]][end_point[t][1]][1][0] # Endpoint traceback
@@ -269,7 +267,7 @@ class smith_waterman:
         min_score = 0.0 : double
             The minimum score for a solution to be included.
         n_sol = None : int
-            Compute the alignment only for the solution with the best n_sol scores.
+            Compute the alignment only for the top n_sol solutions.
         """
 
         end_points = self.__get_all_solutions_end_points(min_score, n_sol)
@@ -329,7 +327,6 @@ class smith_waterman:
         res += "\t" + sol["alignment_seq1"]
         res += "\n\t" + sol["alignment_seq2"] + "\n"
         res += "Score: " + str(sol["score"]) + "\n"
-        res += "Alignment length: " + str(sol["alignment_length"]) + "\n"
         res += "Number of matches: " + str(sol["n_match"]) + "\n"
         res += "Number of mismatches: " + str(sol["n_mismatch"]) + "\n"
         res += "Number of gaps: " + str(sol["n_gaps"]) + "\n"
@@ -359,7 +356,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--penalty", help = "Penalty of a base match [default -3]", type = float, default = -3)
     parser.add_argument("-g", "--gap", help = "Scale for the penalty of a gap insertion [default 2]", type = float, default = 2)
     parser.add_argument("-s", "--min-score", help = "Minimum score for a solution to be included [default 0]", type = float, default = 0)
-    parser.add_argument("-n", "--n-result", help = "Print only the alignment with the best N score [default all]", type = int)
+    parser.add_argument("-n", "--n-result", help = "Print only the best N alignment [default all]", type = int)
     parser.add_argument("-f", "--format", help = "Specify output format [default txt]", type = str, default = "txt", choices = ["txt", "json", "tsv"])
     parser.add_argument("-o", "--output-file", help = "Specify output file [default stdout]", type = str)
     args = parser.parse_args()
@@ -381,7 +378,7 @@ if __name__ == "__main__":
         out = alignment_out.solutions_to_json()
     elif args.format == "tsv":
         out = alignment_out.solutions_to_tsv()
-    print(alignment_out.get_solutions())
+
     # Output redirection (if needed)
     if not args.output_file:
         print(out)

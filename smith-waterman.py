@@ -243,14 +243,12 @@ class smith_waterman:
                         n_gap = end_point[t][1] - local_end_point[1]
                         local_res["alignment_seq2"] = "".join(["-" for k in range(n_gap)]) + local_res["alignment_seq2"]
                         local_res["n_gaps"] += n_gap
-                        print(n_gap)
                     # If score is moving left (gap insertion)
                     elif local_end_point[0] != end_point[t][0] and local_end_point[1] == end_point[t][1]:
                         local_res["alignment_seq2"] = self._seq_col[end_point[t][0] - 1] + local_res["alignment_seq2"]
                         n_gap = end_point[t][0] - local_end_point[0]
                         local_res["alignment_seq1"] = "".join(["-" for k in range(n_gap)]) + local_res["alignment_seq1"]
                         local_res["n_gaps"] += n_gap
-                        print(n_gap)
                     local_res["alignment_length"] += 1
 
                 end_point[t] = self._mat[end_point[t][0]][end_point[t][1]][1][0] # Endpoint traceback

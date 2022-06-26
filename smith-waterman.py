@@ -2,7 +2,7 @@
 
 import json
 import argparse
-
+import sys
 class smith_waterman:
     """
     Smith Waterman alignment class
@@ -36,18 +36,11 @@ class smith_waterman:
     -------
     align()
         Performs the Smith-Waterman alignment populating self._mat.
-    solve(min_score = 0.0, n_sol = None, only_max = False)
+    solve(min_score = 0.0, n_sol = None, only_max = False, print_format = "txt")
         Performs the traceback procedure for the solution with the top
         n_sol score with score >= min_score, or only the solutions
-        with the top score if only_max is set to True.
-    solutions_to_json()
-        Returns all the computed solutions in a json format.
-    solutions_to_tsv()
-        Returns all the computed solutions in a tsv format.
-    get_solutions()
-        Returns all the solutions
-    solutions_to_string()
-        Returns all the solutions in a printable string.
+        with the top score if only_max is set to True and prints them
+        in format of print_format
     """
 
     def __init__(self, seq1, seq2, match, mismatch, k_weight):
@@ -198,7 +191,7 @@ class smith_waterman:
             res = res[:n_sol]
         return res
 
-    def __single_sol_traceback(self, end_point):
+    def __single_sol_traceback(self, end_point, print_format = "txt"):
         """Performs the traceback procedure for a single endpoint
         Parameters
         ----------
@@ -212,9 +205,7 @@ class smith_waterman:
             alignment qualities.
         """
 
-        res = {"seq1" : self._seq_row,
-               "seq2" : self._seq_col,
-               "alignment_seq1" : "",
+        res = {"alignment_seq1" : "",
                "alignment_seq2" : "",
                "alignment_length" : 0,
                "score" : self._mat[end_point[0]][end_point[1]][0],
@@ -260,11 +251,21 @@ class smith_waterman:
                 if len(self._mat[end_point[t][0]][end_point[t][1]][1]) > 1:
                     end_point += self._mat[end_point[t][0]][end_point[t][1]][1][1:] # Add endpoint of divergent tracebacks
 
-            t += 1
+            #Print result to free memory for large alignments
+            if print_format == "txt":
+                print(self.__solution_to_string(results[t]))
+            elif print_format == "tsv":
+                print(self.__solution_to_tsv(results[t]))
+            elif print_format == "json":
+                print(self.__solution_to_json(results[t]))
+            results.pop(0)
+            end_point.pop(0)
+
+
 
         return results
 
-    def solve(self, min_score = 0.0, n_sol = None, only_max = False):
+    def solve(self, min_score = 0.0, n_sol = None, only_max = False, print_format = "txt"):
         """Performs the traceback procedure returning alignments
            with score >= min_score.
         Parameters
@@ -277,44 +278,50 @@ class smith_waterman:
             If true get only the solutions with the max score.
         """
 
+        self.__print_header(print_format)
+
         end_points = self.__get_all_solutions_end_points(min_score, n_sol, only_max)
         for i in end_points:
-            self._solutions += self.__single_sol_traceback(i)
+            self._solutions += self.__single_sol_traceback(i, print_format)
 
-    def solutions_to_json(self):
-        """Converts list of solution into a json object.
+    def __print_header(self, print_format):
+        """Prints header according to print_format
+        Parameters
+        ----------
+        print_format : str
+            The format in which to print output header
+        """
+
+        if print_format == "txt":
+            print("First sequence: {}\nSecond sequence: {}".format(self._seq_col, self._seq_row))
+        elif print_format == "tsv":
+            print("##First sequence: {}\n##Second sequence: {}".format(self._seq_col, self._seq_row))
+            print("alignment_seq_1\talignemnt_seq2\talignment_length\tscore\tmatch\tmismatch\tgaps")
+        elif print_format == "json":
+            print(json.dumps({"First_sequence" : self._seq_col}, indent = 2))
+            print(json.dumps({"Second_sequence" : self._seq_row}, indent = 2))
+
+    def __solution_to_json(self, sol):
+        """Converts solution into a json object.
         Return
         ------
         res : json
-            Solution list converted into a json object.
+            Solution converted into a json object.
         """
 
-        res = json.dumps(self._solutions, indent = 2)
+        res = json.dumps(sol, indent = 2)
 
         return res
 
-    def solutions_to_tsv(self):
-        """Converts list of solution into a tsv-like string.
+    def __solution_to_tsv(self, sol):
+        """Converts solution into a tsv-like row.
         Return
         ------
         res : json
-            Solution list converted into a tsv-like string.
+            Solution converted into a tsv-like string.
         """
-        keys = self._solutions[0].keys()
-
-        result = [list(keys)] + [list(row.values()) for row in self._solutions]
-        res = '\n'.join(['\t'.join(str(val) for val in row) for row in result])
+        res = '\t'.join(str(sol[val]) for val in sol)
         return res
-
-    def get_solutions(self):
-        """Returns all the solutions.
-        Return
-        ------
-        self._solutions : list
-            returns all the solutions
-        """
-
-        return self._solutions
 
     def __solution_to_string(self, sol):
         """Transforms a solution in a printable string.
@@ -328,9 +335,7 @@ class smith_waterman:
             The solution as a string.
         """
 
-        res = "First sequence: " + sol["seq1"] + "\n"
-        res += "Second sequence: " + sol["seq2"] + "\n"
-        res += "Alignment:\n"
+        res = "Alignment:\n"
         res += "\t" + sol["alignment_seq1"]
         res += "\n\t" + sol["alignment_seq2"] + "\n"
         res += "Score: " + str(sol["score"]) + "\n"
@@ -340,20 +345,6 @@ class smith_waterman:
         res += "Number of gaps: " + str(sol["n_gaps"]) + "\n"
 
         return res
-
-    def solutions_to_string(self):
-        """Return all solutions in text format.
-        Return
-        ------
-        res : str
-            All the solutions in text format.
-        """
-        res = ""
-        for i in self._solutions:
-            res += self.__solution_to_string(i)
-
-        return res
-
 
 if __name__ == "__main__":
     # Input management
@@ -371,25 +362,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # End of input management
 
+    # Redirect output if needed
+    if args.output_file:
+        sys.stdout = open(args.output_file, 'w')
+
     # Initialize alignment object
     alignment_out = smith_waterman(args.first_sequence, args.second_sequence, args.match, args.penalty, args.gap)
     # Populate score matrix
     alignment_out.align()
-    # Perform traceback procedure
-    alignment_out.solve(args.min_score, args.n_result, args.only_max)
-
-
-    # Output format selections
-    out = ""
-    if args.format == "txt":
-        out = alignment_out.solutions_to_string()
-    elif args.format == "json":
-        out = alignment_out.solutions_to_json()
-    elif args.format == "tsv":
-        out = alignment_out.solutions_to_tsv()
-    # Output redirection (if needed)
-    if not args.output_file:
-        print(out)
-    else:
-        with open(args.output_file, "w") as out_file:
-            out_file.write(out)
+    # Perform traceback procedure and print results
+    alignment_out.solve(args.min_score, args.n_result, args.only_max, args.format)

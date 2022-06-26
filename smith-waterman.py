@@ -36,9 +36,10 @@ class smith_waterman:
     -------
     align()
         Performs the Smith-Waterman alignment populating self._mat.
-    solve(min_score = 0.0, n_sol = None)
+    solve(min_score = 0.0, n_sol = None, only_max = False)
         Performs the traceback procedure for the solution with the top
-        n_sol score with score >= min_score.
+        n_sol score with score >= min_score, or only the solutions
+        with the top score if only_max is set to True.
     solutions_to_json()
         Returns all the computed solutions in a json format.
     solutions_to_tsv()
@@ -357,14 +358,14 @@ class smith_waterman:
 if __name__ == "__main__":
     # Input management
     parser = argparse.ArgumentParser()
-    parser.add_argument("first_sequence", help = "The first sequence to be aligned")
-    parser.add_argument("second_sequence", help = "The second sequence to be aligned")
+    parser.add_argument("first_sequence", help = "The reference sequence")
+    parser.add_argument("second_sequence", help = "The sequence to be aligned")
     parser.add_argument("-m", "--match", help = "Score of a base match [default 3]", type = float, default = 3)
     parser.add_argument("-p", "--penalty", help = "Penalty of a base match [default -3]", type = float, default = -3)
     parser.add_argument("-g", "--gap", help = "Scale for the penalty of a gap insertion [default 2]", type = float, default = 2)
     parser.add_argument("-s", "--min-score", help = "Minimum score for a solution to be included [default 0]", type = float, default = 0)
     parser.add_argument("-M", "--only-max", help = "Print only the max scoring solutions [default False]", action = "store_true")
-    parser.add_argument("-n", "--n-result", help = "Print only the alignment with the best N score [default all]", type = int)
+    parser.add_argument("-n", "--n-result", help = "Print only the alignment with the best N scores [default all]", type = int)
     parser.add_argument("-f", "--format", help = "Specify output format [default txt]", type = str, default = "txt", choices = ["txt", "json", "tsv"])
     parser.add_argument("-o", "--output-file", help = "Specify output file [default stdout]", type = str)
     args = parser.parse_args()

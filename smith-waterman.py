@@ -168,7 +168,7 @@ class smith_waterman:
 
         return self._mat[end_point[0]][end_point[1]]
 
-    def __get_all_solutions_end_points(self, min_score = 0.0, n_sol = None):
+    def __get_all_solutions_end_points(self, min_score = 0.0, n_sol = None, only_max = False):
         """Returns all ending point for the top n_sol solution with score >= min_score
         Parameters
         ----------
@@ -176,11 +176,15 @@ class smith_waterman:
             Minimum score for a solution to be included.
         n_sol = None : int
             Maximum number of top solution to be returned.
+        only_max = False : bool
+            If true return only the solutions with max score.
         Return
         ------
         res : list
             List of all the possible ending point for solutions that respect filters.
         """
+        if only_max:
+            min_score = max(map(max, self._mat))[0]
 
         res = []
         for i in range(len(self._mat)):
@@ -259,7 +263,7 @@ class smith_waterman:
 
         return results
 
-    def solve(self, min_score = 0.0, n_sol = None):
+    def solve(self, min_score = 0.0, n_sol = None, only_max = False):
         """Performs the traceback procedure returning alignments
            with score >= min_score.
         Parameters
@@ -268,9 +272,11 @@ class smith_waterman:
             The minimum score for a solution to be included.
         n_sol = None : int
             Compute the alignment only for the solution with the best n_sol scores.
+        only_max = False : bool
+            If true get only the solutions with the max score.
         """
 
-        end_points = self.__get_all_solutions_end_points(min_score, n_sol)
+        end_points = self.__get_all_solutions_end_points(min_score, n_sol, only_max)
         for i in end_points:
             self._solutions += self.__single_sol_traceback(i)
 
@@ -300,7 +306,7 @@ class smith_waterman:
         return res
 
     def get_solutions(self):
-        """Returns all the solutions
+        """Returns all the solutions.
         Return
         ------
         self._solutions : list
@@ -310,15 +316,15 @@ class smith_waterman:
         return self._solutions
 
     def __solution_to_string(self, sol):
-        """Transforms a solution in a printable string
+        """Transforms a solution in a printable string.
         Parameters
         ----------
         sol : dict
-            The solution to be transformed into string
+            The solution to be transformed into string.
         Return
         ------
         res : str
-            The solution as a string
+            The solution as a string.
         """
 
         res = "First sequence: " + sol["seq1"] + "\n"
@@ -335,11 +341,11 @@ class smith_waterman:
         return res
 
     def solutions_to_string(self):
-        """Return all solutions in text format
+        """Return all solutions in text format.
         Return
         ------
         res : str
-            All the solutions in text format
+            All the solutions in text format.
         """
         res = ""
         for i in self._solutions:
@@ -357,6 +363,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--penalty", help = "Penalty of a base match [default -3]", type = float, default = -3)
     parser.add_argument("-g", "--gap", help = "Scale for the penalty of a gap insertion [default 2]", type = float, default = 2)
     parser.add_argument("-s", "--min-score", help = "Minimum score for a solution to be included [default 0]", type = float, default = 0)
+    parser.add_argument("-M", "--only-max", help = "Print only the max scoring solutions [default False]", action = "store_true")
     parser.add_argument("-n", "--n-result", help = "Print only the alignment with the best N score [default all]", type = int)
     parser.add_argument("-f", "--format", help = "Specify output format [default txt]", type = str, default = "txt", choices = ["txt", "json", "tsv"])
     parser.add_argument("-o", "--output-file", help = "Specify output file [default stdout]", type = str)
@@ -368,7 +375,7 @@ if __name__ == "__main__":
     # Populate score matrix
     alignment_out.align()
     # Perform traceback procedure
-    alignment_out.solve(args.min_score, args.n_result)
+    alignment_out.solve(args.min_score, args.n_result, args.only_max)
 
 
     # Output format selections
@@ -379,7 +386,6 @@ if __name__ == "__main__":
         out = alignment_out.solutions_to_json()
     elif args.format == "tsv":
         out = alignment_out.solutions_to_tsv()
-    print(alignment_out.get_solutions())
     # Output redirection (if needed)
     if not args.output_file:
         print(out)

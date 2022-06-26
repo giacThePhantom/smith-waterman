@@ -36,11 +36,13 @@ class smith_waterman:
     -------
     align()
         Performs the Smith-Waterman alignment populating self._mat.
-    solve(min_score = 0.0, n_sol = None, only_max = False, print_format = "txt")
+    solve(min_score = 0.0, n_sol = None, only_max = False, include_div = False print_format = "txt")
         Performs the traceback procedure for the solution with the top
         n_sol score with score >= min_score, or only the solutions
         with the top score if only_max is set to True and prints them
-        in format of print_format
+        in format of print_format. Divergent solutions are printed only
+        when include_div = True
+
     """
 
     def __init__(self, seq1, seq2, match, mismatch, k_weight):
@@ -191,7 +193,7 @@ class smith_waterman:
             res = res[:n_sol]
         return res
 
-    def __single_sol_traceback(self, end_point, print_format = "txt"):
+    def __single_sol_traceback(self, end_point, include_div = False, print_format = "txt"):
         """Performs the traceback procedure for a single endpoint
         Parameters
         ----------
@@ -216,11 +218,14 @@ class smith_waterman:
         end_point = [end_point]
         results = [res]
         t = 0
-        while t < len(end_point): # t refers to results[t] originated from end_point[t]
+        while len(results) > 0: # t refers to results[t] originated from end_point[t]
             while self._mat[end_point[t][0]][end_point[t][1]][0] > 0: # Traceback for a single procedure
                 local_res = results[t]
                 temp_res = local_res.copy()
-                for i in range(len(self._mat[end_point[t][0]][end_point[t][1]][1])): # If the traceback diverges, add a solution to the result list
+                div_number = 1
+                if include_div:
+                    div_number = len(self._mat[end_point[t][0]][end_point[t][1]][1])
+                for i in range(div_number): # If the traceback diverges, add a solution to the result list
                     local_end_point = self._mat[end_point[t][0]][end_point[t][1]][1][i]
                     if i > 0:
                         local_res = temp_res.copy()
@@ -265,7 +270,7 @@ class smith_waterman:
 
         return results
 
-    def solve(self, min_score = 0.0, n_sol = None, only_max = False, print_format = "txt"):
+    def solve(self, min_score = 0.0, n_sol = None, only_max = False, include_div = False, print_format = "txt"):
         """Performs the traceback procedure returning alignments
            with score >= min_score.
         Parameters
@@ -276,13 +281,17 @@ class smith_waterman:
             Compute the alignment only for the solution with the best n_sol scores.
         only_max = False : bool
             If true get only the solutions with the max score.
+        include_div = False : bool
+            If true print all divergent solutions
+        print_format = "txt" : str
+            Format in which solutions are printed
         """
 
         self.__print_header(print_format)
 
         end_points = self.__get_all_solutions_end_points(min_score, n_sol, only_max)
         for i in end_points:
-            self._solutions += self.__single_sol_traceback(i, print_format)
+            self._solutions += self.__single_sol_traceback(i, include_div, print_format)
 
     def __print_header(self, print_format):
         """Prints header according to print_format
@@ -356,6 +365,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--gap", help = "Scale for the penalty of a gap insertion [default 2]", type = float, default = 2)
     parser.add_argument("-s", "--min-score", help = "Minimum score for a solution to be included [default 0]", type = float, default = 0)
     parser.add_argument("-M", "--only-max", help = "Print only the max scoring solutions [default False]", action = "store_true")
+    parser.add_argument("-d", "--include-divergent", help = "Print all the divergent solution [default False]", action = "store_true")
     parser.add_argument("-n", "--n-result", help = "Print only the alignment with the best N scores [default all]", type = int)
     parser.add_argument("-f", "--format", help = "Specify output format [default txt]", type = str, default = "txt", choices = ["txt", "json", "tsv"])
     parser.add_argument("-o", "--output-file", help = "Specify output file [default stdout]", type = str)
@@ -371,4 +381,4 @@ if __name__ == "__main__":
     # Populate score matrix
     alignment_out.align()
     # Perform traceback procedure and print results
-    alignment_out.solve(args.min_score, args.n_result, args.only_max, args.format)
+    alignment_out.solve(args.min_score, args.n_result, args.only_max, args.include_divergent, args.format)

@@ -17,7 +17,7 @@ After cloning the repo to perform an alignment between sequences:
 - -g, --gap [optional] scale for the penalty for a gap insertion [default 2]
 - -s, --min-score [optional] the minumum score for a solution to be included [default 0]
 - -M, --only-max [optional] print only the max scoring solutions [default False]
-- -d, --include-divergent [optional] print divergent solutions [default True]
+- -d, --include-divergent [optional] print divergent solutions [default True] (WARNING this solution is exponential depending on the length of the alignment, use it at your own risk.
 - -n, --n-results [optional] print only the alignment with the best N scores [default all]
 - -f, --format [optional] choose the output format between tsv, json or txt [default txt]
 - -o, --output-file [optional] specify the file in which to save the alignemtn [default stdout]

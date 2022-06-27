@@ -223,7 +223,7 @@ class smith_waterman:
                 local_res = results[t]
                 temp_res = local_res.copy()
                 div_number = 1
-                if include_div:
+                if include_div: #Include divergent solution, if false is set to one as to take only the first origin for a cell score
                     div_number = len(self._mat[end_point[t][0]][end_point[t][1]][1])
                 for i in range(div_number): # If the traceback diverges, add a solution to the result list
                     local_end_point = self._mat[end_point[t][0]][end_point[t][1]][1][i]
